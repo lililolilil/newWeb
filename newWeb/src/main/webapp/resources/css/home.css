@@ -1,0 +1,39 @@
+@CHARSET "EUC-KR";
+
+.container {
+	width: 100%;
+	clear: both;
+	margin:0; 
+} 
+.side_nav{
+	margin:0px; 
+	padding: 0px; 
+	top: -20px; 
+}
+.side_title{
+	text-align: center; 
+}
+
+.header_box {
+	margin-bottom: 0;
+}
+
+.input-group {
+	margin-bottom: 1em;
+}
+
+.pagination {
+	display: flex;
+	justify-content: center;
+}
+
+table>thead>tr>th {
+	height: 3em;
+	vertical-align: middle;
+	text-align: center;
+}
+
+table>tbody>tr>td {
+	vertical-align: middle;
+	text-align: center;
+}

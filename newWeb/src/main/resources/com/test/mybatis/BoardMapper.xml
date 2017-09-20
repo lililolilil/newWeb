@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.test.mybatis.BoardMapper">
+
+	<select id="selectListOfArticles" parameterType="hashmap"
+		resultType="Article">
+		SELECT articleno, title, regdate, hit, name, attachfileNum, commentNum
+		FROM (
+		SELECT rownum r,a.*
+		FROM (
+		SELECT
+		a.articleno, a.title, a.regdate, a.hit, m.name,
+		COUNT(DISTINCT(f.attachfileno)) attachfileNum,
+		COUNT(DISTINCT(c.commentno)) commentNum
+		FROM
+		article a, attachfile f, comments c, member m
+		WHERE
+		a.articleno = f.articleno(+)
+		AND a.articleno = c.articleno(+)
+		AND a.email = m.email(+)
+		AND a.boardcd = #{boardCd}
+		<if test="searchWord != null and searchWord != ''">
+			AND (title LIKE '%${searchWord}%'
+			OR DBMS_LOB.INSTR(content, '${searchWord}') > 0)
+		</if>
+		GROUP BY a.articleno, title, a.regdate, hit, m.name
+		ORDER BY articleno DESC
+		) a
+		)
+		WHERE r BETWEEN #{start} AND #{end}
+	</select>
+
+	<select id="selectListOfRecent" parameterType="string" resultType="Article">
+		SELECT *
+		FROM (select articleno, boardcd, title, content, hit, regdate from article where article.BOARDCD = #{boardCd} order by articleno desc)
+		WHERE rownum BETWEEN 1 AND 9
+	</select>
+	
+	<select id="selectCountOfArticles" parameterType="hashmap"
+		resultType="int">
+		SELECT count(*) FROM article WHERE boardcd = #{boardCd}
+		<if test="searchWord != null and searchWord != ''">
+			AND (title LIKE '%${searchWord}%'
+			OR DBMS_LOB.INSTR(content, '${searchWord}') > 0)
+		</if>
+	</select>
+
+	<insert id="insert" parameterType="Article" useGeneratedKeys="true">
+		<selectKey keyProperty="articleNo" resultType="int" order="BEFORE">
+			SELECT seq_article.nextval FROM dual
+		</selectKey>
+		INSERT INTO article (articleNo, boardCd, title, content, email, hit,
+		regdate)
+		VALUES
+		(#{articleNo}, #{boardCd}, #{title}, #{content}, #{email}, 0, sysdate)
+	</insert>
+
+	<insert id="insertAttachFile" parameterType="AttachFile">
+		INSERT INTO attachfile (attachfileno, filename, filetype, filesize,
+		articleno, email)
+		VALUES
+		(SEQ_ATTACHFILE.nextval, #{filename}, #{filetype}, #{filesize}, #{articleNo}, #{email})
+	</insert>
+
+	<update id="update" parameterType="Article">
+		UPDATE article
+		SET title = #{title}, content = #{content}
+		WHERE articleno = #{articleNo}
+	</update>
+
+	<delete id="delete" parameterType="int">
+		DELETE FROM article WHERE articleno = #{articleNo}
+	</delete>
+
+	<update id="updateHitPlusOne" parameterType="int">
+		UPDATE article SET hit = hit + 1 WHERE articleno = #{articleNo}
+	</update>
+
+	<select id="selectOne" parameterType="int" resultType="Article">
+		SELECT
+		articleno,
+		title,
+		content,
+		email,
+		hit,
+		regdate
+		FROM article WHERE articleno = #{articleNo}
+	</select>
+
+	<select id="selectNextOne" parameterType="hashmap" resultType="Article">
+		SELECT articleno, title
+		FROM
+		(SELECT rownum r,a.*
+		FROM
+		(SELECT articleno, title
+		FROM article
+		WHERE
+		boardCd = #{boardCd}
+		AND articleno > #{articleNo}
+		<if test="searchWord != null and searchWord != ''">
+			AND (title LIKE '%${searchWord}%'
+			OR DBMS_LOB.INSTR(content, '${searchWord}') > 0)
+		</if>
+		ORDER BY articleno)
+		a)
+		WHERE r = 1
+	</select>
+
+	<select id="selectPrevOne" parameterType="hashmap" resultType="Article">
+		SELECT articleno, title
+		FROM
+		(SELECT rownum r,a.*
+		FROM
+		(SELECT articleno, title
+		FROM article
+		WHERE
+		boardCd = #{boardCd}
+		AND articleno > #{articleNo}
+		<if test="searchWord != null and searchWord != ''">
+			AND (title LIKE '%${searchWord}%'
+			OR DBMS_LOB.INSTR(content, '${searchWord}') > 0)
+		</if>
+		ORDER BY articleno DESC)
+		a)
+		WHERE r = 1
+	</select>
+
+	<select id="selectListOfAttachFiles" parameterType="int"
+		resultType="AttachFile">
+		SELECT
+		attachfileno,
+		filename,
+		filetype,
+		filesize,
+		articleno,
+		email
+		FROM attachfile
+		WHERE articleno = #{articleNo}
+		ORDER BY attachfileno
+	</select>
+
+	<delete id="deleteFile" parameterType="int">
+		DELETE FROM attachfile WHERE attachfileno = #{attachFileNo}
+	</delete>
+
+	<select id="selectOneBoard" parameterType="string" resultType="Board">
+		SELECT * FROM board WHERE boardcd = #{boardCd}
+	</select>
+
+	<insert id="insertComment" parameterType="Comment">
+		INSERT INTO comments (commentno, articleno, name, memo, regdate, passwd)
+		VALUES (seq_comments.nextval, #{articleNo}, #{name}, #{memo}, sysdate,
+		#{passwd})
+	</insert>
+
+	<update id="updateComment" parameterType="Comment">
+		UPDATE comments SET memo = #{memo} WHERE commentno = #{commentNo}
+	</update>
+
+	<delete id="deleteComment" parameterType="int">
+		DELETE FROM comments WHERE commentno = #{commentNo}
+	</delete>
+
+	<select id="selectListOfComments" parameterType="int"
+		resultType="Comment">
+		SELECT
+		commentno,
+		articleno,
+		name,
+		memo,
+		regdate
+		FROM comments
+		WHERE articleno = #{articleNo}
+		ORDER BY commentno DESC
+	</select>
+
+	<select id="selectOneAttachFile" parameterType="String"
+		resultType="AttachFile">
+		SELECT
+		attachfileno,
+		filename,
+		filetype,
+		filesize,
+		articleno,
+		email
+		FROM attachfile
+		WHERE filename = #{filename}
+	</select>
+
+	<select id="selectOneComment" parameterType="int" resultType="Comment">
+		SELECT
+		commentno,
+		articleno,
+		name,
+		memo,
+		regdate,
+		passwd
+		FROM comments
+		WHERE commentno = #{commentNo}
+	</select>
+
+</mapper>

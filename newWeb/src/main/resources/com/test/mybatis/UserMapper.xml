@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.test.mybatis.UserMapper">
+    
+  <insert id="insert" parameterType="User">
+    <selectKey keyProperty="regdate" resultType="java.util.Date" order="AFTER">
+    select regdate FROM member WHERE email = #{email}
+  	</selectKey>
+  	 INSERT INTO member VALUES (#{email}, #{passwd}, #{name}, #{mobile}, sysdate)
+  </insert>
+
+  <select id="login" resultType="User">
+    SELECT email, passwd, name, mobile FROM member 
+    WHERE email = #{email} AND passwd = #{passwd}
+  </select>
+
+  <update id="update" parameterType="User">
+    UPDATE member SET name = #{name}, mobile = #{mobile} 
+    WHERE email = #{email} AND passwd = #{passwd}
+  </update>
+
+  <update id="updatePasswd">
+    UPDATE member SET passwd = #{newPasswd} 
+    WHERE passwd = #{currentPasswd} AND email = #{email}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM member 
+    WHERE email = #{email}
+  </delete>
+
+  <select id="selectOne" parameterType="string" resultType="User">
+    SELECT email, passwd, name, mobile 
+    FROM member
+    WHERE email = #{email}
+  </select>
+    
+</mapper>
